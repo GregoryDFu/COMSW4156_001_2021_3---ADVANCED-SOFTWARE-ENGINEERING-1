@@ -3,7 +3,6 @@ from json import dump
 from Gameboard import Gameboard
 import db
 
-
 app = Flask(__name__)
 
 import logging
@@ -11,7 +10,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 game = None
-
+p1_color = None
 '''
 Implement '/' endpoint
 Method Type: GET
@@ -22,7 +21,7 @@ Initial Webpage where gameboard is initialized
 
 @app.route('/', methods=['GET'])
 def player1_connect():
-    pass
+    return render_template("player1_connect.html", status = "Pick a Color.")
 
 
 '''
@@ -49,7 +48,12 @@ Assign player1 their color
 
 @app.route('/p1Color', methods=['GET'])
 def player1_config():
-    pass
+    global game
+    game = Gameboard()
+    global p1_color
+    p1_color = request.args.get("color")
+    game.player1 = p1_color
+    return render_template("player1_connect.html", status=p1_color)
 
 
 '''
@@ -64,7 +68,15 @@ Assign player2 their color
 
 @app.route('/p2Join', methods=['GET'])
 def p2Join():
-    pass
+    if p1_color is None:
+        raise Exception("P1 has not picked a color")
+    else:
+        if p1_color == "yellow":
+            p2_color = "red"
+        else:
+            p2_color = "yellow"
+        game.player2 = p2_color
+        return render_template("p2Join.html", status=p2_color)
 
 
 '''
@@ -81,7 +93,9 @@ Process Player 1's move
 
 @app.route('/move1', methods=['POST'])
 def p1_move():
-    pass
+    resp = game.handle_move(1, request.get_json())
+    is_valid = True if resp == "pass" else False
+    return jsonify(move=game.board, invalid=not is_valid, reason=resp, winner=game.game_result)
 
 '''
 Same as '/move1' but instead proccess Player 2
@@ -90,7 +104,9 @@ Same as '/move1' but instead proccess Player 2
 
 @app.route('/move2', methods=['POST'])
 def p2_move():
-    pass
+    resp = game.handle_move(2, request.get_json())
+    is_valid = True if resp == "pass" else False
+    return jsonify(move=game.board, invalid=not is_valid, reason=resp, winner=game.game_result)
 
 
 
