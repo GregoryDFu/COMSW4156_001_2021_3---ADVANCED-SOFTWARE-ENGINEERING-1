@@ -1,3 +1,6 @@
+import db
+
+
 class Gameboard():
     def __init__(self):
         self.player1 = ""
@@ -25,6 +28,10 @@ class Gameboard():
             resp = self.compute_game_state(player, col)
             if resp == "pass":
                 self.current_turn = 'p1' if self.current_turn == 'p2' else 'p2'
+                move = ((self.current_turn, str(self.board), self.game_result,
+                         self.player1, self.player2, self.remaining_moves,
+                         str(self.rowHeights)))
+                db.add_move(move)
             return resp
 
     def compute_game_state(self, player, col):

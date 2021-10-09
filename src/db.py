@@ -14,11 +14,10 @@ def init_db():
         conn = sqlite3.connect('sqlite_db')
         conn.execute('CREATE TABLE GAME(current_turn TEXT, board TEXT,' +
                      'winner TEXT, player1 TEXT, player2 TEXT' +
-                     ', remaining_moves INT)')
+                     ', remaining_moves INT, row_heights TEXT)')
         print('Database Online, table created')
     except Error as e:
         print(e)
-
     finally:
         if conn:
             conn.close()
@@ -26,13 +25,29 @@ def init_db():
 
 '''
 move is a tuple (current_turn, board, winner, player1, player2,
-remaining_moves)
+remaining_moves, row_heights)
 Insert Tuple into table
 '''
 
 
 def add_move(move):  # will take in a tuple
-    pass
+    conn = None
+    try:
+        conn = sqlite3.connect('sqlite_db')
+        query = '''INSERT INTO GAME(current_turn, board, winner,
+                    player1, player2, remaining_moves, row_heights)
+                    VALUES(?,?,?,?,?,?,?)'''
+        c = conn.cursor()
+        c.execute(query, move)
+        conn.commit()
+        c.close()
+        return True
+    except Error as e:
+        print(e)
+        return False
+    finally:
+        if conn:
+            conn.close()
 
 
 '''
@@ -42,9 +57,26 @@ return (current_turn, board, winner, player1, player2, remaining_moves)
 
 
 def getMove():
-    # will return tuple(current_turn, board, winner, player1, player2,
-    # remaining_moves) or None if db fails
-    pass
+    conn = None
+    try:
+        conn = sqlite3.connect('sqlite_db')
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM GAME')
+        count = c.fetchone()
+        if count[0] == 0:
+            return None
+        query = '''SELECT * FROM GAME WHERE remaining_moves =
+                    (SELECT MIN(remaining_moves) FROM GAME)'''
+        c.execute(query)
+        res = c.fetchone()
+        c.close()
+        return res
+    except Error as e:
+        print(e)
+        return None
+    finally:
+        if conn:
+            conn.close()
 
 
 '''

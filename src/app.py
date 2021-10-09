@@ -1,11 +1,9 @@
-from flask import Flask, render_template, request, redirect, jsonify
-from json import dump
+from flask import Flask, render_template, request, jsonify
 from Gameboard import Gameboard
 import db
+import logging
 
 app = Flask(__name__)
-
-import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -23,7 +21,11 @@ Initial Webpage where gameboard is initialized
 def player1_connect():
     global game
     game = Gameboard()
-    return render_template("player1_connect.html", status = "Pick a Color.")
+    global p1_color
+    p1_color = None
+    db.clear()
+    db.init_db()
+    return render_template("player1_connect.html", status="Pick a Color.")
 
 
 '''
@@ -50,9 +52,20 @@ Assign player1 their color
 
 @app.route('/p1Color', methods=['GET'])
 def player1_config():
+    global game
+    move = db.getMove()
     global p1_color
-    p1_color = request.args.get("color")
-    game.player1 = p1_color
+    if p1_color is None:
+        p1_color = request.args.get("color")
+        game.player1 = p1_color
+    if move is not None:
+        game.current_turn = move[0]
+        game.board = eval(move[1])
+        game.game_result = move[2]
+        game.player1 = move[3]
+        game.player2 = move[4]
+        game.remaining_moves = move[5]
+        game.rowHeights = eval(move[6])
     return render_template("player1_connect.html", status=p1_color)
 
 
@@ -68,6 +81,16 @@ Assign player2 their color
 
 @app.route('/p2Join', methods=['GET'])
 def p2Join():
+    global game
+    move = db.getMove()
+    if move is not None:
+        game.current_turn = move[0]
+        game.board = eval(move[1])
+        game.game_result = move[2]
+        game.player1 = move[3]
+        game.player2 = move[4]
+        game.remaining_moves = move[5]
+        game.rowHeights = eval(move[6])
     if p1_color is None:
         raise Exception("P1 has not picked a color")
     else:
@@ -95,7 +118,9 @@ Process Player 1's move
 def p1_move():
     resp = game.handle_move(1, request.get_json())
     is_valid = True if resp == "pass" else False
-    return jsonify(move=game.board, invalid=not is_valid, reason=resp, winner=game.game_result)
+    return jsonify(move=game.board, invalid=not is_valid, reason=resp,
+                   winner=game.game_result)
+
 
 '''
 Same as '/move1' but instead proccess Player 2
@@ -106,8 +131,8 @@ Same as '/move1' but instead proccess Player 2
 def p2_move():
     resp = game.handle_move(2, request.get_json())
     is_valid = True if resp == "pass" else False
-    return jsonify(move=game.board, invalid=not is_valid, reason=resp, winner=game.game_result)
-
+    return jsonify(move=game.board, invalid=not is_valid, reason=resp,
+                   winner=game.game_result)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import unittest
 from Gameboard import Gameboard
+import db
 
 
 class Test_TestGameboard(unittest.TestCase):
@@ -7,12 +8,26 @@ class Test_TestGameboard(unittest.TestCase):
         self.game_board = Gameboard()
         self.game_board.player1 = 'red'
         self.game_board.player2 = 'yellow'
+        db.init_db()
 
     def test_valid_move(self):
         # Checks that gameboard is properly updated on a valid move
         col = 1
         self.game_board.validate_move(1, col)
         self.assertEqual(self.game_board.board[5][1], 'red')
+
+    def test_valid_move_db(self):
+        # Checks that validate move properly adds to db
+        col = 1
+        self.game_board.validate_move(1, col)
+        res = db.getMove()
+        self.assertEqual(res[0], 'p2')
+        self.assertTrue('red' in res[1])
+        self.assertEqual(res[2], '')
+        self.assertEqual(res[3], 'red')
+        self.assertEqual(res[4], 'yellow')
+        self.assertEqual(res[5], 41)
+        self.assertEqual(res[6], '[6, 5, 6, 6, 6, 6, 6]')
 
     def test_winning_move_horizontal(self):
         # Checks if there is a winning move in horizontal direction
@@ -122,6 +137,7 @@ class Test_TestGameboard(unittest.TestCase):
 
     def tearDown(self):
         self.game_board = None
+        db.clear()
 
 
 if __name__ == '__main__':
